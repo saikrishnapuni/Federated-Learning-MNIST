@@ -72,10 +72,10 @@ The project follows these steps:
 
 The global model parameters are computed using a weighted average:
 
-\[
-w_{\text{global}} =
-\sum_{k=1}^{K}\frac{n_k}{N}w_k
-\]
+
+$$
+w_{\text{global}} = \sum_{k=1}^{K} \frac{n_k}{N} w_k
+$$
 
 where:
 
