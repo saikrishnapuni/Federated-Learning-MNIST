@@ -6,15 +6,16 @@ This project implements **Federated Learning from scratch using PyTorch**, witho
 
 The goal is to understand how multiple clients can collaboratively train a global Convolutional Neural Network (CNN) while keeping their training data local.
 
-The project uses the MNIST handwritten digit dataset and implements **Federated Averaging (FedAvg)** to aggregate locally trained model parameters.
+The project uses the MNIST handwritten digit dataset and implements **Federated Averaging (FedAvg)** to aggregate locally trained model parameters. A centralized CNN is also trained as a baseline for comparison.
 
 ## Objectives
 
 - Understand the fundamentals of federated learning.
 - Implement a client-server training workflow without a federated learning framework.
-- Train a CNN locally on multiple clients.
+- Train CNN models locally on multiple clients.
 - Implement weighted model aggregation using FedAvg.
-- Evaluate the global model on the MNIST test dataset.
+- Compare federated learning against centralized training.
+- Evaluate model performance on the MNIST test dataset.
 
 ## Technologies Used
 
@@ -27,22 +28,22 @@ The project uses the MNIST handwritten digit dataset and implements **Federated 
 
 The CNN consists of:
 
-1. Convolutional layer with 32 output channels
-2. ReLU activation and Batch Normalization
-3. Convolutional layer with 16 output channels
-4. ReLU activation and Batch Normalization
-5. Flatten layer
-6. Fully connected layer with 128 hidden units
-7. ReLU activation
-8. Output layer with 10 classes
+1. Convolutional layer with 32 output channels.
+2. ReLU activation and Batch Normalization.
+3. Convolutional layer with 16 output channels.
+4. ReLU activation and Batch Normalization.
+5. Flatten layer.
+6. Fully connected layer with 128 hidden units.
+7. ReLU activation.
+8. Output layer with 10 classes.
 
-The model uses Cross-Entropy Loss and the Adam optimizer.
+The model uses Cross-Entropy Loss and the Adam optimizer with a learning rate of 0.001.
 
 ## Dataset and Client Setup
 
-The MNIST dataset contains 60,000 training images and 10,000 test images, each representing one of ten handwritten digits (0–9).
+The MNIST dataset contains 60,000 training images and 10,000 test images, representing ten handwritten digit classes (0–9).
 
-Three simulated clients are created using different label distributions:
+Three simulated clients are created using different label distributions.
 
 | Client | Excluded training labels | Test labels |
 |---|---|---|
@@ -67,7 +68,7 @@ The project follows these steps:
 7. Repeat the process for 10 communication rounds.
 8. Evaluate the global model on the complete MNIST test dataset.
 
-### FedAvg
+### Federated Averaging (FedAvg)
 
 The global model parameters are computed using a weighted average:
 
@@ -83,18 +84,27 @@ where:
 - \(N\) is the sum of the client dataset sizes.
 - \(w_k\) represents the locally trained model parameters.
 
-## Experimental Results
+## Centralized vs. Federated Results
 
-### Global Model
+The same CNN architecture was evaluated using centralized training and federated training.
 
-| Metric | Result |
-|---|---:|
-| Dataset | MNIST |
-| Number of clients | 3 |
-| Federated communication rounds | 10 |
-| Global test accuracy | **98.49%** |
+| Experimental setting | Centralized CNN | Federated CNN (FedAvg) |
+|---|---:|---:|
+| Training setup | Entire training dataset | 3 simulated clients |
+| Training epochs / communication rounds | 10 epochs | 10 rounds |
+| Optimizer | Adam | Adam |
+| Learning rate | 0.001 | 0.001 |
+| Test dataset | Full MNIST test set | Full MNIST test set |
+| **Test accuracy** | **98.05%** | **98.49%** |
+| Test error rate | 1.95% | 1.51% |
 
-### Local Model Evaluation
+The federated model achieved **98.49% test accuracy**, compared with **98.05%** for the centralized CNN, a difference of 0.44 percentage points in this experiment.
+
+These results are from individual runs. The observed difference does not establish that federated learning is inherently better than centralized training. Random initialization, data ordering, client data overlap, and Batch Normalization statistics may influence the results. Repeated experiments under controlled conditions are needed for a robust comparison.
+
+## Local Client Evaluation
+
+The local models were evaluated on test subsets containing the digit classes excluded from their respective training datasets.
 
 | Client | Test accuracy |
 |---|---:|
@@ -102,32 +112,39 @@ where:
 | Client 2 | 57.04% |
 | Client 3 | 36.73% |
 
-The local models are evaluated on digit classes excluded from their respective training datasets. These results measure performance on unseen classes and should not be directly compared with the global model's accuracy on the full test set.
+These measurements evaluate generalization to classes unseen by each local model. They should not be directly compared with the global model's accuracy on the complete MNIST test set.
 
 ## Key Observations
 
-- The global model achieved 98.49% accuracy on the full MNIST test dataset.
-- Local training allows clients to learn from their own data without directly sharing raw training examples.
+- The global FedAvg model achieved 98.49% accuracy on the full MNIST test dataset.
+- The centralized CNN achieved 98.05% accuracy in the current run.
+- Local models showed different levels of performance on their respective unseen-class test subsets.
 - FedAvg combines local model updates into a shared global model.
-- Differences between local and global evaluation results highlight the effect of client-specific data distributions.
+- The experiment demonstrates a basic federated learning workflow without relying on a dedicated federated learning framework.
 
 ## Limitations and Future Work
 
-- Compare federated training with a centralized CNN baseline.
-- Record global test accuracy and loss after every communication round.
-- Investigate the effect of different client partitions and numbers of clients.
+- Repeat centralized and federated experiments with multiple random seeds.
+- Compare mean accuracy and standard deviation across runs.
+- Record global test loss and accuracy after every communication round.
+- Investigate the effect of client count and different data partitions.
+- Evaluate disjoint and more strongly non-IID client partitions.
 - Examine the effect of Batch Normalization statistics during aggregation.
-- Explore disjoint and more strongly non-IID data partitions.
+- Measure training time and communication overhead.
 - Extend the implementation to more complex datasets and models.
 
-## Privacy Note
+## Model Saving
 
-This implementation keeps training examples local in the simulated client workflow, but it does not implement differential privacy, secure aggregation, or cryptographic protection of model updates. Federated learning alone does not guarantee privacy.
+The final global model can be saved using PyTorch's `state_dict` mechanism:
+
+```python
+torch.save(global_model.state_dict(), "federated_mnist_cnn.pth")
+```
 
 ## How to Run
 
 1. Install Python and PyTorch.
-2. Install Torchvision:
+2. Install the required dependencies:
 
    ```bash
    pip install torch torchvision
@@ -135,7 +152,11 @@ This implementation keeps training examples local in the simulated client workfl
 
 3. Run the Python training script.
 4. The MNIST dataset will be downloaded automatically if it is not already available.
-5. The final global model can be saved using PyTorch's `state_dict` mechanism.
+5. The training process will simulate three clients and perform 10 federated communication rounds.
+
+## Privacy Note
+
+This implementation keeps training examples local in the simulated client workflow, but it does not implement differential privacy, secure aggregation, or cryptographic protection of model updates. Federated learning alone does not guarantee privacy.
 
 ## Acknowledgements
 
